@@ -4,6 +4,7 @@ package database
 
 import (
 	"database/sql"
+	"strconv"
 )
 
 // Task описывает задачи на уровне БД (не путать с api.Task, который принимает/отдаёт JSON через HTTP).
@@ -36,4 +37,34 @@ func (db *DB) AddTask(task *Task) (int64, error) {
 	}
 
 	return id, nil
+}
+
+func (db *DB) Tasks(limit int) ([]*Task, error) {
+	query := "SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT :limit"
+
+	rows, err := db.Query(query, sql.Named("limit", limit))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tasks := []*Task{}
+
+	for rows.Next() {
+		var id int64
+		task := &Task{}
+
+		if err := rows.Scan(&id, &task.Date, &task.Title, &task.Comment, &task.Repeat); err != nil {
+			return nil, err
+		}
+
+		task.ID = strconv.FormatInt(id, 10)
+		tasks = append(tasks, task)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
 }

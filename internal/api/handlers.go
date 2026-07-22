@@ -22,7 +22,6 @@ func (h *Handler) TaskHandler(res http.ResponseWriter, req *http.Request) {
 	// обработка других методов будет добавлена на следующих шагах
 	case http.MethodPost:
 		h.AddTaskHandler(res, req)
-	// GET/PUT/DELETE будут добавлены позже
 
 	default:
 		writeError(res, http.StatusMethodNotAllowed, "метод не поддерживается")

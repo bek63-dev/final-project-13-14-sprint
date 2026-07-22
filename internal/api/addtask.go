@@ -47,7 +47,7 @@ func (h *Handler) AddTaskHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	dbTask := converter(&task)
+	dbTask := convToDBTask(&task)
 
 	if err := checkDate(dbTask); err != nil {
 		log.Println("AddTaskHandler: checkDate:", err)
@@ -65,8 +65,8 @@ func (h *Handler) AddTaskHandler(res http.ResponseWriter, req *http.Request) {
 	writeJSON(res, http.StatusOK, idResponse{ID: strconv.FormatInt(id, 10)})
 }
 
-// converter преобразует Task в database.Task для сохранения в БД.
-func converter(task *Task) *database.Task {
+// convToDBTask преобразует Task в database.Task для сохранения в БД.
+func convToDBTask(task *Task) *database.Task {
 	return &database.Task{
 		ID:      task.ID,
 		Date:    task.Date,

@@ -38,7 +38,7 @@ func writeError(res http.ResponseWriter, status int, message string) {
 // Если нет — отправляет ошибку 405 Method Not Allowed и возвращает false.
 func isMethodAllowed(expectedMethod string, res http.ResponseWriter, req *http.Request) bool {
 	if req.Method != expectedMethod {
-		http.Error(res, "метод не поддерживается", http.StatusMethodNotAllowed)
+		writeError(res, http.StatusMethodNotAllowed, "метод не поддерживается")
 		return false
 	}
 	return true

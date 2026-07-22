@@ -32,5 +32,6 @@ func Init(mux *http.ServeMux, db *database.DB) {
 	// Регистрация API-обработчиков
 	mux.HandleFunc("/api/nextdate", api.NextDayHandler)
 	mux.HandleFunc("/api/task", handler.TaskHandler)
+	mux.HandleFunc("/api/tasks", handler.GetTasksHandler)
 	// ...
 }
