@@ -3,8 +3,9 @@
 package database
 
 import (
-	"database/sql"
 	"strconv"
+
+	"github.com/bek63-dev/final-project-13-14-sprint/internal/domain"
 )
 
 // Task описывает задачи на уровне БД (не путать с api.Task, который принимает/отдаёт JSON через HTTP).
@@ -19,13 +20,8 @@ type Task struct {
 
 // AddTask сохраняет задачу в таблице scheduler и возвращает идентификатор новой записи (LastInsertId).
 func (db *DB) AddTask(task *Task) (int64, error) {
-	query := "INSERT INTO scheduler (date, title, comment, repeat) VALUES (:date, :title, :comment, :repeat)"
-	res, err := db.Exec(query,
-		sql.Named("date", task.Date),
-		sql.Named("title", task.Title),
-		sql.Named("comment", task.Comment),
-		sql.Named("repeat", task.Repeat),
-	)
+	query := "INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?)"
+	res, err := db.Exec(query, task.Date, task.Title, task.Comment, task.Repeat)
 
 	if err != nil {
 		return 0, err
@@ -39,10 +35,28 @@ func (db *DB) AddTask(task *Task) (int64, error) {
 	return id, nil
 }
 
-func (db *DB) Tasks(limit int) ([]*Task, error) {
-	query := "SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT :limit"
+// Tasks ищет задачи по дате или ключевому слову в title/comment
+// и возвращает список, отсортированный по дате с ограничением limit.
+func (db *DB) Tasks(search string, limit int) ([]*Task, error) {
+	var query string
+	var args []any
 
-	rows, err := db.Query(query, sql.Named("limit", limit))
+	switch {
+	case search == "":
+		query = "SELECT * FROM scheduler ORDER BY date LIMIT ?"
+		args = []any{limit}
+	default:
+		if date, ok := domain.ParseSearchDate(search); ok {
+			query = "SELECT * FROM scheduler WHERE date = ? ORDER BY date LIMIT ?"
+			args = []any{date, limit}
+		} else {
+			search = "%" + search + "%"
+			query = "SELECT * FROM scheduler WHERE title LIKE ? OR comment LIKE ? ORDER BY date LIMIT ?"
+			args = []any{search, search, limit}
+		}
+	}
+
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}

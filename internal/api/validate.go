@@ -1,8 +1,9 @@
-// Package api: файл validate.go содержит валидацию задачи, общую для всех обработчиков
+// Package api: файл validate.go содержит функции-хелперы для валидации http-запросов
 package api
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -47,4 +48,14 @@ func checkDate(task *database.Task) error {
 	}
 
 	return nil
+}
+
+// isMethodAllowed проверяет, соответствует ли метод запроса ожидаемому.
+// Если нет — отправляет ошибку 405 Method Not Allowed и возвращает false.
+func isMethodAllowed(expectedMethod string, res http.ResponseWriter, req *http.Request) bool {
+	if req.Method != expectedMethod {
+		writeError(res, http.StatusMethodNotAllowed, "метод не поддерживается")
+		return false
+	}
+	return true
 }

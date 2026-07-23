@@ -23,7 +23,7 @@ type NextDateParams struct {
 	repeat string
 }
 
-// parseNextDateParams достаёт и валидирует GET-параметры запроса
+// parseNextDateParams парсит и валидирует GET-параметры звпроса для эндпоинта /api/nextdate
 func parseNextDateParams(req *http.Request) (*NextDateParams, error) {
 	now := domain.TruncateDate(time.Now())
 
