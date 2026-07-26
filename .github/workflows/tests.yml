@@ -1,33 +1,44 @@
-name: Go
+name: CI/CD Pipeline
 
 on: [push]
 
 jobs:
   build:
+    name: Build & Test
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.24.x]
+        go-version: [1.26.5]
   
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v7
 
-    - name: Setup Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.24.x'
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
         
-    - name: Display Go version
-      run: go version
+      - name: Display Go version
+        run: go version
 
-    - name: Install dependencies
-      run: go mod tidy
+      - name: Install dependencies
+        run: go mod tidy
 
-    - name: Run local server
-      run: |
-        CGO_ENABLED=0 GOOS=linux go run main.go &
-        sleep 100
-        go test -run ^TestApp$ ./tests
+      - name: Create .env file for tests
+        run: |
+          echo "TODO_HOST=localhost" > .env
+          echo "TODO_PORT=7540" >> .env
+          echo "TODO_DBFILE=scheduler.db" >> .env
+          echo "TODO_PASSWORD=password123" >> .env
+          echo "TODO_SECRET_KEY=kj45ls12" >> .env
+
+      - name: Run local server & execute tests
+        run: |
+          CGO_ENABLED=0 GOOS=linux go run ./cmd/main.go &
+          sleep 100
+          go test -v -run ^TestApp$ ./tests
         
         
