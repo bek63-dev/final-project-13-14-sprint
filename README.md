@@ -258,6 +258,10 @@ TODO_SECRET_KEY=kj45ls12
 
 Если сервер запущен с непустым `TODO_PASSWORD`, получите токен через `/api/signin` и присвойте его переменной `Token`, иначе защищённые маршруты вернут `401`.
 
+> ⚠️ Токен в `tests/settings.go` живёт 48 часов (см. `tokenTTL` в `internal/auth/jwt.go`).
+> Перед прогоном тестов проверьте, что он не истёк, и при необходимости получите новый
+> через `POST /api/signin` с паролем из `.env`.
+
 Запуск отдельных наборов тестов:
 
 ```bash
@@ -275,7 +279,7 @@ go test -run ^TestDelTask$ ./tests    # удаление задачи
 Или все тесты сразу:
 
 ```bash
-go test ./tests
+go test ./...
 ```
 
 ---
@@ -288,7 +292,7 @@ Workflow `.github/workflows/tests.yml` запускается на каждый 
 2. Устанавливает зависимости (`go mod tidy`).
 3. Создаёт `.env` с тестовыми значениями (`TODO_HOST`, `TODO_PORT`, `TODO_DBFILE`, `TODO_PASSWORD`, `TODO_SECRET_KEY`).
 4. Запускает сервер в фоне (`go run ./cmd/main.go &`), выжидает 100 секунд для полной инициализации.
-5. Прогоняет тесты (`go test -v -run ^TestApp$ ./tests`).
+5. Прогоняет полный набор тестов (`go test -v ./...`).
 
 ## Docker
 
@@ -338,13 +342,13 @@ mkdir -p ~/scheduler-data
 **Запустите контейнер, подставив свои значения вместо плейсхолдеров:**
 
 ```bash
-docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=<ваш_пароль> -e TODO_SECRET_KEY=<ваш_секретный_ключ> -e TODO_DBFILE=/app/data/scheduler.db -v ~/scheduler-data:/app/data scheduler:latest
+docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=<ваш_пароль> -e TODO_SECRET_KEY=<ваш_секретный_ключ> -v ~/scheduler-data:/app/data scheduler:latest
 ```
 
 Например, с конкретными значениями (используются только как демонстрация — при развёртывании у себя замените на собственные):
 
 ```bash
-docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=password123 -e TODO_SECRET_KEY=kj45ls12 -e TODO_DBFILE=/app/data/scheduler.db -v ~/scheduler-data:/app/data scheduler:latest
+docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=password123 -e TODO_SECRET_KEY=kj45ls12 -v ~/scheduler-data:/app/data scheduler:latest
 ```
 
 #### Windows — Git Bash
@@ -358,13 +362,13 @@ mkdir -p ~/scheduler-data
 **Запустите контейнер, подставив свои значения вместо плейсхолдеров:**
 
 ```bash
-MSYS_NO_PATHCONV=1 docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=<ваш_пароль> -e TODO_SECRET_KEY=<ваш_секретный_ключ> -e TODO_DBFILE=/app/data/scheduler.db -v ~/scheduler-data:/app/data scheduler:latest
+MSYS_NO_PATHCONV=1 docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=<ваш_пароль> -e TODO_SECRET_KEY=<ваш_секретный_ключ> -v ~/scheduler-data:/app/data scheduler:latest
 ```
 
 Например, с конкретными значениями:
 
 ```bash
-MSYS_NO_PATHCONV=1 docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=password123 -e TODO_SECRET_KEY=kj45ls12 -e TODO_DBFILE=/app/data/scheduler.db -v ~/scheduler-data:/app/data scheduler:latest
+MSYS_NO_PATHCONV=1 docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=password123 -e TODO_SECRET_KEY=kj45ls12 -v ~/scheduler-data:/app/data scheduler:latest
 ```
 
 > ⚠️ Команду важно вводить **одной строкой**, без переносов `\`. Также обязателен префикс `MSYS_NO_PATHCONV=1` — без него Git Bash автоматически преобразует путь `/app/data/scheduler.db` в Windows-путь вида `C:/Program Files/Git/app/data/scheduler.db`, из-за чего сервер не сможет открыть файл базы данных.
@@ -380,13 +384,13 @@ mkdir $HOME/scheduler-data
 **Запустите контейнер, подставив свои значения вместо плейсхолдеров:**
 
 ```powershell
-docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=<ваш_пароль> -e TODO_SECRET_KEY=<ваш_секретный_ключ> -e TODO_DBFILE=/app/data/scheduler.db -v ${HOME}/scheduler-data:/app/data scheduler:latest
+docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=<ваш_пароль> -e TODO_SECRET_KEY=<ваш_секретный_ключ> -v ${HOME}/scheduler-data:/app/data scheduler:latest
 ```
 
 Например, с конкретными значениями:
 
 ```powershell
-docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=password123 -e TODO_SECRET_KEY=kj45ls12 -e TODO_DBFILE=/app/data/scheduler.db -v ${HOME}/scheduler-data:/app/data scheduler:latest
+docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=password123 -e TODO_SECRET_KEY=kj45ls12 -v ${HOME}/scheduler-data:/app/data scheduler:latest
 ```
 
 > ⚠️ Команду также рекомендуется вводить одной строкой, без переносов ``` ` ``` — при вставке многострочной команды символ переноса иногда теряется, из-за чего часть флагов может не примениться.
@@ -400,10 +404,16 @@ docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=password123 -e TODO
 | `-p 7540:7540` | проброс порта: `<порт на хосте>:<порт в контейнере>` |
 | `-e TODO_PASSWORD=<ваш_пароль>` | пароль для аутентификации в приложении — задайте своё значение |
 | `-e TODO_SECRET_KEY=<ваш_секретный_ключ>` | секретный ключ для подписи JWT-токенов — задайте своё значение |
-| `-e TODO_DBFILE=/app/data/scheduler.db` | путь к файлу БД **внутри контейнера** (должен совпадать с точкой монтирования `-v`) |
 | `-v ~/scheduler-data:/app/data` (Linux/macOS, Git Bash) или `-v ${HOME}/scheduler-data:/app/data` (PowerShell) | монтирование директории хоста в директорию контейнера `/app/data` |
 
-> 💡 Если не передать `TODO_PASSWORD` и `TODO_SECRET_KEY` через `-e`, будут использованы пустые значения по умолчанию, заданные в Dockerfile (`ENV TODO_PASSWORD=""` и `ENV TODO_SECRET_KEY=""`). Пустой пароль означает, что аутентификация в приложении будет отключена (см. `config.go`: пустая строка в `TODO_PASSWORD` трактуется приложением как "пароль не задан", и middleware `Auth` пропускает запросы без проверки).
+> 💡 Если не передать `TODO_PASSWORD` и `TODO_SECRET_KEY` через `-e`, будут использованы
+> пустые значения по умолчанию, заданные в Dockerfile (`ENV TODO_PASSWORD=""` и
+> `ENV TODO_SECRET_KEY=""`). Пустой пароль означает, что аутентификация в приложении
+> будет отключена (см. `config.go`: пустая строка в `TODO_PASSWORD` трактуется
+> приложением как "пароль не задан", и middleware `Auth` пропускает запросы без проверки).
+
+> Путь к базе данных (`TODO_DBFILE`) по умолчанию уже указывает на `/app/data/scheduler.db` —
+> совпадает с точкой монтирования volume, поэтому переопределять его не требуется.
 
 ### Проверка работы
 
@@ -474,7 +484,7 @@ docker logs -f scheduler    # смотреть логи в реальном вр
 ```bash
 docker rm -f scheduler
 docker build -t scheduler:latest .
-docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=<ваш_пароль> -e TODO_SECRET_KEY=<ваш_секретный_ключ> -e TODO_DBFILE=/app/data/scheduler.db -v ~/scheduler-data:/app/data scheduler:latest
+docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=<ваш_пароль> -e TODO_SECRET_KEY=<ваш_секретный_ключ> -v ~/scheduler-data:/app/data scheduler:latest
 ```
 
 **Windows — Git Bash:**
@@ -482,7 +492,7 @@ docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=<ваш_парол�
 ```bash
 docker rm -f scheduler
 docker build -t scheduler:latest .
-MSYS_NO_PATHCONV=1 docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=<ваш_пароль> -e TODO_SECRET_KEY=<ваш_секретный_ключ> -e TODO_DBFILE=/app/data/scheduler.db -v ~/scheduler-data:/app/data scheduler:latest
+MSYS_NO_PATHCONV=1 docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=<ваш_пароль> -e TODO_SECRET_KEY=<ваш_секретный_ключ> -v ~/scheduler-data:/app/data scheduler:latest
 ```
 
 **Windows — PowerShell:**
@@ -490,7 +500,7 @@ MSYS_NO_PATHCONV=1 docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=
 ```powershell
 docker rm -f scheduler
 docker build -t scheduler:latest .
-docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=<ваш_пароль> -e TODO_SECRET_KEY=<ваш_секретный_ключ> -e TODO_DBFILE=/app/data/scheduler.db -v ${HOME}/scheduler-data:/app/data scheduler:latest
+docker run -d --name scheduler -p 7540:7540 -e TODO_PASSWORD=<ваш_пароль> -e TODO_SECRET_KEY=<ваш_секретный_ключ> -v ${HOME}/scheduler-data:/app/data scheduler:latest
 ```
 
 Существующие данные в директории `scheduler-data` при этом не пострадают.

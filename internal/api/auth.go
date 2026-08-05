@@ -27,7 +27,8 @@ type tokenResponse struct {
 // с паролем из конфигурации (TODO_PASSWORD из .env) и при совпадении выдаёт JWT-токен для
 // последующих запросов к защищённым маршрутам.
 func (h *Handler) SignInHandler(res http.ResponseWriter, req *http.Request) {
-	if !isMethodAllowed(http.MethodPost, res, req) {
+	if req.Method != http.MethodPost {
+		writeError(res, http.StatusMethodNotAllowed, "метод не поддерживается")
 		return
 	}
 
@@ -37,7 +38,6 @@ func (h *Handler) SignInHandler(res http.ResponseWriter, req *http.Request) {
 		writeError(res, http.StatusBadRequest, "ошибка десериализации JSON")
 		return
 	}
-	defer req.Body.Close()
 
 	if signIn.Password != h.Config.Password {
 		writeError(res, http.StatusBadRequest, "Неверный пароль")

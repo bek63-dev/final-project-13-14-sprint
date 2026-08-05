@@ -4,6 +4,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -27,9 +28,10 @@ type Config struct {
 // окружения не задана. У Password намеренно нет значения по умолчанию:
 // пустой пароль осмысленно означает отключённую аутентификацию.
 const (
-	defaultHost   = ""
-	defaultPort   = "7540"
-	defaultDBFile = "scheduler.db"
+	defaultHost      = ""
+	defaultPort      = "7540"
+	defaultDBFile    = "scheduler.db"
+	defaultSecretKey = "change-me-in-production"
 )
 
 // Имена переменных окружения, из которых читается конфигурация.
@@ -44,8 +46,8 @@ const (
 // Load читает .env файл и переменные окружения и возвращает итоговую
 // конфигурацию сервера. Вызывается один раз при старте приложения в main.
 func Load() (*Config, error) {
-	if err := godotenv.Load(); err != nil {
-		return nil, fmt.Errorf("godotenv.Load: %v", err)
+	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("godotenv.Load: %w", err)
 	}
 
 	cfg := &Config{
@@ -58,11 +60,9 @@ func Load() (*Config, error) {
 	if host := os.Getenv(envTodoHost); host != "" {
 		cfg.Host = host
 	}
-
 	if port := os.Getenv(envTodoPort); port != "" {
 		cfg.Port = port
 	}
-
 	if dbFile := os.Getenv(envTodoDBFile); dbFile != "" {
 		cfg.DBFile = dbFile
 	}
@@ -71,6 +71,9 @@ func Load() (*Config, error) {
 	cfg.Password = os.Getenv(envTodoPassword)
 
 	cfg.SecretKey = os.Getenv(envTodoSecretKey)
+	if cfg.SecretKey == "" && cfg.Password != "" {
+		cfg.SecretKey = defaultSecretKey
+	}
 
 	cfg.DBFile = filepath.Clean(strings.TrimSpace(cfg.DBFile))
 

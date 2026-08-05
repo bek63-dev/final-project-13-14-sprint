@@ -30,7 +30,8 @@ type Task struct {
 //	{"id": "123"}       		— при успехе отвечает идентификатором новой записи
 //	{"error": "текст ошибки"} 	— при любой ошибке
 func (h *Handler) AddTaskHandler(res http.ResponseWriter, req *http.Request) {
-	if !isMethodAllowed(http.MethodPost, res, req) {
+	if req.Method != http.MethodPost {
+		writeError(res, http.StatusMethodNotAllowed, "метод не поддерживается")
 		return
 	}
 
@@ -40,7 +41,6 @@ func (h *Handler) AddTaskHandler(res http.ResponseWriter, req *http.Request) {
 		writeError(res, http.StatusBadRequest, "ошибка десериализации JSON")
 		return
 	}
-	defer req.Body.Close()
 
 	// Валидация обязательного поля Title
 	if strings.TrimSpace(task.Title) == "" {

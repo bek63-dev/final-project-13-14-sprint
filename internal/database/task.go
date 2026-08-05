@@ -40,22 +40,24 @@ func (db *DB) AddTask(task *Task) (int64, error) {
 // - Пустой search возвращает ближайшие задачи;
 // - search в формате даты фильтрует по конкретному дню, иначе — по ключевым словам в title или comment.
 func (db *DB) Tasks(search string, limit int) ([]*Task, error) {
+	const selectFields = "SELECT id, date, title, comment, repeat FROM scheduler"
+
+	date, isDate := domain.ParseSearchDate(search)
+
 	var query string
 	var args []any
 
 	switch {
 	case search == "":
-		query = "SELECT * FROM scheduler ORDER BY date LIMIT ?"
+		query = selectFields + " ORDER BY date LIMIT ?"
 		args = []any{limit}
+	case isDate:
+		query = selectFields + " WHERE date == ? ORDER BY date LIMIT ?"
+		args = []any{date, limit}
 	default:
-		if date, ok := domain.ParseSearchDate(search); ok {
-			query = "SELECT * FROM scheduler WHERE date == ? ORDER BY date LIMIT ?"
-			args = []any{date, limit}
-		} else {
-			search = "%" + search + "%"
-			query = "SELECT * FROM scheduler WHERE title LIKE ? OR comment LIKE ? ORDER BY date LIMIT ?"
-			args = []any{search, search, limit}
-		}
+		like := "%" + search + "%"
+		query = selectFields + " WHERE title LIKE ? OR comment LIKE ? ORDER BY date LIMIT ?"
+		args = []any{like, like, limit}
 	}
 
 	rows, err := db.Query(query, args...)
@@ -87,7 +89,7 @@ func (db *DB) Tasks(search string, limit int) ([]*Task, error) {
 
 // GetTask возвращает задачу по её идентификатору.
 func (db *DB) GetTask(id string) (*Task, error) {
-	query := "SELECT * FROM scheduler WHERE id == ?"
+	query := "SELECT id, date, title, comment, repeat FROM scheduler WHERE id == ?"
 
 	var rowID int64
 	task := &Task{}

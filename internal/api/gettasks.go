@@ -25,7 +25,8 @@ const (
 //   - иначе: ищет по совпадению строки в названии (title) или комментарии (comment);
 //   - если пустой: возвращает ближайшие задачи отсортированные по дате по возрастанию.
 func (h *Handler) GetTasksHandler(res http.ResponseWriter, req *http.Request) {
-	if !isMethodAllowed(http.MethodGet, res, req) {
+	if req.Method != http.MethodGet {
+		writeError(res, http.StatusMethodNotAllowed, "метод не поддерживается")
 		return
 	}
 

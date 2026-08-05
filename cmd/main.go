@@ -21,7 +21,7 @@ func main() {
 	// Загрузка конфигурации из .env и переменных окружения.
 	cfg, err := config.Load()
 	if err != nil {
-		logger.Fatal("config.Load: %w", err)
+		logger.Fatalf("config.Load: %v", err)
 	}
 
 	// Подключение к БД и применение схемы.
@@ -29,14 +29,20 @@ func main() {
 	if err != nil {
 		logger.Fatalf("database.New: %v", err)
 	}
-	defer db.Close()
 
 	// Сборка маршрутизатора со всеми HTTP-обработчиками.
 	mux := router.New(db, cfg)
 
 	// Запуск сервера, блокирует выполнение до остановки.
 	srv := server.New(cfg.Address(), logger, mux)
-	if err := srv.Run(); err != nil {
-		logger.Fatal(err)
+	runErr := srv.Run()
+
+	// db.Close() вызывается явно, а не через defer
+	if closeErr := db.Close(); closeErr != nil {
+		logger.Printf("db.Close: %v", closeErr)
+	}
+
+	if runErr != nil {
+		logger.Fatal(runErr)
 	}
 }

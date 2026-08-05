@@ -16,7 +16,8 @@ const idParam = "id"
 // GetTaskHandler обрабатывает GET /api/task?id=<id>: возвращает задачу по идентификатору.
 // Используется фронтендом для заполнения формы редактирования задачи.
 func (h *Handler) GetTaskHandler(res http.ResponseWriter, req *http.Request) {
-	if !isMethodAllowed(http.MethodGet, res, req) {
+	if req.Method != http.MethodGet {
+		writeError(res, http.StatusMethodNotAllowed, "метод не поддерживается")
 		return
 	}
 
@@ -39,7 +40,8 @@ func (h *Handler) GetTaskHandler(res http.ResponseWriter, req *http.Request) {
 // EditTaskHandler обрабатывает PUT /api/task: принимает JSON с
 // идентификатором задачи, валидирует поля и обновляет запись в БД.
 func (h *Handler) EditTaskHandler(res http.ResponseWriter, req *http.Request) {
-	if !isMethodAllowed(http.MethodPut, res, req) {
+	if req.Method != http.MethodPut {
+		writeError(res, http.StatusMethodNotAllowed, "метод не поддерживается")
 		return
 	}
 
@@ -49,7 +51,6 @@ func (h *Handler) EditTaskHandler(res http.ResponseWriter, req *http.Request) {
 		writeError(res, http.StatusBadRequest, "ошибка десериализации JSON")
 		return
 	}
-	defer req.Body.Close()
 
 	if strings.TrimSpace(task.ID) == "" {
 		writeError(res, http.StatusBadRequest, "не указан идентификатор")

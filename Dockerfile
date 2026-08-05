@@ -9,10 +9,9 @@ FROM alpine:3.24 AS runtime
 WORKDIR /app
 COPY --from=builder /build/scheduler ./scheduler
 COPY --from=builder /app/web ./web
-RUN touch .env
+RUN mkdir -p /app/data
 ENV TODO_PORT=7540
-ENV TODO_DBFILE=/app/scheduler.db
+ENV TODO_DBFILE=/app/data/scheduler.db
 ENV TODO_PASSWORD=""
 ENV TODO_SECRET_KEY=""
-EXPOSE 7540
 ENTRYPOINT ["./scheduler"]

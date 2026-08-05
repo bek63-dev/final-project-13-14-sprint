@@ -51,7 +51,8 @@ func parseNextDateParams(req *http.Request) (*NextDateParams, error) {
 // вычисляет дату следующего повторения задачи по переданным параметрам now, date и repeat и
 // возвращает её в формате JSON.
 func NextDayHandler(res http.ResponseWriter, req *http.Request) {
-	if !isMethodAllowed(http.MethodGet, res, req) {
+	if req.Method != http.MethodGet {
+		writeError(res, http.StatusMethodNotAllowed, "метод не поддерживается")
 		return
 	}
 
@@ -69,5 +70,7 @@ func NextDayHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	writeJSON(res, http.StatusOK, nextDate)
+	res.Header().Set("Content-Type", "text/plain; charset=UTF-8")
+	res.WriteHeader(http.StatusOK)
+	res.Write([]byte(nextDate))
 }

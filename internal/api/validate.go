@@ -4,7 +4,6 @@ package api
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -50,15 +49,4 @@ func checkDate(task *database.Task) error {
 	}
 
 	return nil
-}
-
-// isMethodAllowed проверяет соответствие метода запроса ожидаемому.
-// При несовпадении отправляет клиенту 405 Method Not Allowed и возвращает
-// false — обработчик должен прервать выполнение по этому сигналу.
-func isMethodAllowed(expectedMethod string, res http.ResponseWriter, req *http.Request) bool {
-	if req.Method != expectedMethod {
-		writeError(res, http.StatusMethodNotAllowed, "метод не поддерживается")
-		return false
-	}
-	return true
 }

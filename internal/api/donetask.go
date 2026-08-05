@@ -15,7 +15,8 @@ import (
 // задачу выполненной. Одноразовая задача (пустой Repeat) удаляется,
 // периодическая — переносится на следующую дату по своему правилу.
 func (h *Handler) DoneTaskHandler(res http.ResponseWriter, req *http.Request) {
-	if !isMethodAllowed(http.MethodPost, res, req) {
+	if req.Method != http.MethodPost {
+		writeError(res, http.StatusMethodNotAllowed, "метод не поддерживается")
 		return
 	}
 
@@ -65,7 +66,8 @@ func (h *Handler) DoneTaskHandler(res http.ResponseWriter, req *http.Request) {
 
 // DeleteTaskHandler обрабатывает DELETE /api/task?id=<id>: удаляет задачу по идентификатору.
 func (h *Handler) DeleteTaskHandler(res http.ResponseWriter, req *http.Request) {
-	if !isMethodAllowed(http.MethodDelete, res, req) {
+	if req.Method != http.MethodDelete {
+		writeError(res, http.StatusMethodNotAllowed, "метод не поддерживается")
 		return
 	}
 
